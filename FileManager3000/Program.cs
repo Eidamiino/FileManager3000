@@ -30,13 +30,12 @@ namespace FileManager3000
 			//{
 			//	var filesPerExtension = allFiles.Where(y => y.Extension.ToLower() == x).ToList();
 			//});
+			var sumSize = allFiles.Sum(x => x.Length);
 
-			var table = new ConsoleTable($"Extension", $"Name", $"Size");
-			allFiles.ForEach(x=>table.AddRow($"{x.Extension}", $"{x.Name}", $"{GetSize(x.Length)}MB"));
+			var table = new ConsoleTable($"Extension", $"Count", $"Sum");
+			allFiles.ForEach(x=>table.AddRow($"{x.Extension}", 1337, $"{GetSize(sumSize)}MB"));
 			table.Write();
 
-			var sumSize = allFiles.Sum(x => x.Length);
-			Console.WriteLine($"Sum: {GetSize(sumSize)}MB");
 		}
 
 		private static string ReadValue(string label, string defaultValue)
