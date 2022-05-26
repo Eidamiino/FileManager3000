@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using ConsoleTables;
 
 namespace FileManager3000
 {
@@ -15,22 +16,27 @@ namespace FileManager3000
 				path = ReadValue($"Enter directory path: ", $"c:\\Windows\\System32");
 			} while (!IsExist(path));
 
-			string extensions = ReadValue($"Enter extensions to search for (separated with ;): ", null).Trim();
+			string extensions = ReadValue($"Enter extensions to search for (separated with ;): ", string.Empty);
 			var allFiles = Directory.GetFiles(path).Select(x=>new FileInfo(x)).ToList();
 
-			if (extensions != string.Empty||string.IsNullOrEmpty(extensions))
+			if (extensions != string.Empty||!string.IsNullOrEmpty(extensions))
 			{
 				var trimmedExtensions = extensions.Split(';').Select(x => x.Trim()).ToList();
 				allFiles = allFiles.Where(x => trimmedExtensions.Contains(x.Extension)).ToList();
 			}
-			//var onlyType = files.Where(x => x.Extension == extensions).Select(x => x).ToList();
 
-			allFiles.ForEach(x => Console.WriteLine($"File: {x.Name}\tSize: {x.Length / 1024 / 1024}MB"));
+			//var distinctExtensions = allFiles.Select(x => x.Extension.ToLower()).Distinct().ToList();
+			//distinctExtensions.ForEach(x =>
+			//{
+			//	var filesPerExtension = allFiles.Where(y => y.Extension.ToLower() == x).ToList();
+			//});
 
-			var fileCount = allFiles.Count();
+			var table = new ConsoleTable($"Extension", $"Name", $"Size");
+			allFiles.ForEach(x=>table.AddRow($"{x.Extension}", $"{x.Name}", $"{GetSize(x.Length)}MB"));
+			table.Write();
+
 			var sumSize = allFiles.Sum(x => x.Length);
-			var avgSize = allFiles.Average(x => x.Length);
-			Console.WriteLine($"Amount of files: {fileCount}\tSum: {sumSize / 1024 / 1024}MB\tAverage:{avgSize / 1024 / 1024}MB");
+			Console.WriteLine($"Sum: {GetSize(sumSize)}MB");
 		}
 
 		private static string ReadValue(string label, string defaultValue)
@@ -49,8 +55,12 @@ namespace FileManager3000
 				Console.WriteLine($"Directory with path {dirPath} does not exist");
 				return false;
 			}
-		
 			return true;
+		}
+
+		public static double GetSize(double length)
+		{
+			return Math.Round(length / 1024/1024,2);
 		}
 	}
 }
