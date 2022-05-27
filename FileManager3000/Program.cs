@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -72,9 +73,29 @@ namespace FileManager3000
 						}
 						break;
 					case 3:
-					{
+						{
+							string rootPath;
+							do
+							{
+								rootPath = ReadValue($"Enter directory path: ", $"c:\\Temp");
+							} while (!DirExists(rootPath));
 
-					}
+							var foundFiles = Directory.EnumerateFiles(rootPath, "backup.zip", SearchOption.AllDirectories).ToList();
+							List<string> foundFolders = new List<string>();
+							foundFiles.ForEach(x => foundFolders.Add(Path.GetDirectoryName(x)));
+							foundFolders.ForEach(x => Console.WriteLine($"{foundFolders.IndexOf(x) + 1}: {x}"));
+							do
+							{
+								var openedFileIndex = ReadValue($"Which file you'd like to open ('b' to go to main menu): ", "b");
+								if (openedFileIndex == "b")
+									break;
+
+								if (foundFolders.Count > int.Parse(openedFileIndex) && int.Parse(openedFileIndex) > 0)
+									Process.Start("explorer.exe", foundFiles[int.Parse(openedFileIndex) - 1]);
+								else
+									InvalidOption();
+							} while (true);
+						}
 						break;
 					default:
 						{
