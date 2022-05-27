@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Threading;
 using ConsoleTables;
 
 namespace FileManager3000
@@ -23,29 +25,72 @@ namespace FileManager3000
 	{
 		static void Main(string[] args)
 		{
-			string path = null;
-			do
+			while (true)
 			{
-				path = ReadValue($"Enter directory path: ", $"c:\\Windows\\System32");
-			} while (!IsExisting(path));
+				var choice = int.Parse(ReadValue($"Choose your option:\n1) File extension statistics\t2) Create backup file\t3) List backup files\n", "0"));
+				switch (choice)
+				{
+					case 1:
+						{
+							string path = null;
+							do
+							{
+								path = ReadValue($"Enter directory path: ", $"c:\\Windows\\System32");
+							} while (!DirExists(path));
 
-			string extensions = ReadValue($"Enter extensions to search for (separated with ;): ", string.Empty).Trim();
-			var allFiles = Directory.GetFiles(path).Select(x => new FileInfo(x)).ToList();
+							string extensions = ReadValue($"Enter extensions to search for (separated with ;): ", string.Empty).Trim();
+							var allFiles = Directory.GetFiles(path).Select(x => new FileInfo(x)).ToList();
 
-			if (extensions != string.Empty || !string.IsNullOrEmpty(extensions))
-			{
-				var trimmedExtensions = extensions.Split(';').Select(x => x.Trim()).ToList();
-				allFiles = allFiles.Where(x => trimmedExtensions.Contains(x.Extension)).ToList();
+							if (extensions != string.Empty || !string.IsNullOrEmpty(extensions))
+							{
+								var trimmedExtensions = extensions.Split(';').Select(x => x.Trim()).ToList();
+								allFiles = allFiles.Where(x => trimmedExtensions.Contains(x.Extension)).ToList();
+							}
+
+							var allExtensions = allFiles.Select(x => x.Extension.ToLower()).Distinct().ToList();
+
+							var extensionStatistics = GetExtensionsStats(allExtensions, allFiles);
+							extensionStatistics = extensionStatistics.OrderByDescending(x => x.Count).ToList();
+
+							var table = new ConsoleTable($"Extension", $"Count", $"Sum");
+							extensionStatistics.ForEach(x => table.AddRow($"{x.Name}", $"{x.Count}", $"{GetSize(x.Sum)}MB"));
+							table.Write();
+						}
+						break;
+					case 2:
+						{
+							var rootPath = ReadValue($"Enter directory path: ", $"c:\\Temp");
+							if (!DirExists(rootPath))
+								Directory.CreateDirectory(rootPath);
+							var allFiles = Directory.GetFiles(rootPath).Select(x => new FileInfo(x)).ToList();
+							var folderPath = $"{rootPath}\\{DateTime.Now:yyyy-mm-dd_hh-mm-ss}";
+							Directory.CreateDirectory(folderPath);
+							var zipPath = $"{folderPath}\\backup.zip";
+
+							using var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create);
+							allFiles.ForEach(x => archive.CreateEntryFromFile($"{x}", Path.GetFileName($"{x}")));
+						}
+						break;
+					case 3:
+					{
+
+					}
+						break;
+					default:
+						{
+							InvalidOption();
+						}
+						break;
+				}
 			}
+		}
 
-			var allExtensions = allFiles.Select(x => x.Extension.ToLower()).Distinct().ToList();
-
-			var extensionStatistics = GetExtensionsStats(allExtensions, allFiles);
-			extensionStatistics = extensionStatistics.OrderByDescending(x => x.Count).ToList();
-
-			var table = new ConsoleTable($"Extension", $"Count", $"Sum");
-			extensionStatistics.ForEach(x => table.AddRow($"{x.Name}", $"{x.Count}", $"{GetSize(x.Sum)}MB"));
-			table.Write();
+		private static void InvalidOption()
+		{
+			Console.ForegroundColor = ConsoleColor.Red;
+			Console.WriteLine($"Invalid menu option selected");
+			Console.ResetColor();
+			Thread.Sleep(750);
 		}
 
 		private static List<ExtensionStatistic> GetExtensionsStats(List<string> allExtensions, List<FileInfo> allFiles)
@@ -70,7 +115,7 @@ namespace FileManager3000
 			return value;
 		}
 
-		public static bool IsExisting(string dirPath)
+		public static bool DirExists(string dirPath)
 		{
 			if (!Directory.Exists(dirPath))
 			{
